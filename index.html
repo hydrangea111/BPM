@@ -1,244 +1,532 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BPM 측정기</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TAP / BPM UNIT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Major+Mono+Display&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-        }
+  :root {
+    --bg: #141416;
+    --panel-a: #2c2d32;
+    --panel-b: #1b1c20;
+    --panel-border: #3d3e44;
+    --screen: #0a0b0c;
+    --amber: #ffb020;
+    --amber-dim: #6b4a18;
+    --amber-glow: rgba(255, 176, 32, .55);
+    --red: #e8483f;
+    --red-dark: #a52f27;
+    --text: #eeece6;
+    --muted: #8b8d93;
+    --steel: #55575e;
+  }
 
-        .container {
-            text-align: center;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            max-width: 500px;
-            width: 90%;
-        }
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(ellipse at 50% -10%, #1f2024 0%, var(--bg) 60%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+    color: var(--text);
+    font-family: 'Barlow Condensed', sans-serif;
+  }
 
-        h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-        }
+  .unit {
+    position: relative;
+    width: 100%;
+    max-width: 380px;
+    background: linear-gradient(155deg, var(--panel-a), var(--panel-b) 70%);
+    border: 1px solid var(--panel-border);
+    border-radius: 18px;
+    padding: 22px 24px 26px;
+    box-shadow:
+      0 30px 60px rgba(0,0,0,.5),
+      inset 0 1px 0 rgba(255,255,255,.05);
+  }
 
-        .subtitle {
-            font-size: 1.1em;
-            opacity: 0.8;
-            margin-bottom: 30px;
-        }
+  /* 브러시드 메탈 텍스처 */
+  .unit::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 18px;
+    background: repeating-linear-gradient(
+      100deg,
+      rgba(255,255,255,.015) 0px,
+      rgba(255,255,255,.015) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    pointer-events: none;
+  }
 
-        .bpm-display {
-            font-size: 4em;
-            font-weight: bold;
-            margin: 30px 0;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-            transition: all 0.3s ease;
-        }
+  .screw {
+    position: absolute;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #7c7e85, var(--steel) 60%, #2c2d31);
+    box-shadow: 0 1px 2px rgba(0,0,0,.6);
+  }
+  .screw::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 15%;
+    width: 70%; height: 1px;
+    background: rgba(0,0,0,.5);
+    transform: rotate(35deg);
+  }
+  .screw.tl { top: 11px; left: 11px; }
+  .screw.tr { top: 11px; right: 11px; }
+  .screw.bl { bottom: 11px; left: 11px; }
+  .screw.br { bottom: 11px; right: 11px; }
 
-        .tap-button {
-            width: 200px;
-            height: 200px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
-            border: none;
-            color: white;
-            font-size: 1.5em;
-            font-weight: bold;
-            cursor: pointer;
-            margin: 20px auto;
-            display: block;
-            transition: all 0.2s ease;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            outline: none; /* 키보드 포커스 테두리 제거 */
-        }
+  /* 상단 라벨 바 */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 6px 16px;
+  }
 
-        .tap-button:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
-            background: linear-gradient(45deg, #ff5252, #d63031);
-        }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .14em;
+    color: var(--muted);
+  }
 
-        .tap-button:active, .tap-button.active {
-            transform: scale(0.95) translateY(0);
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
-            background: linear-gradient(45deg, #ff3838, #c0392b);
-        }
+  .power-led {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--red);
+    box-shadow: 0 0 6px 1px var(--red);
+    animation: breathe 2.6s ease-in-out infinite;
+  }
 
-        .info {
-            margin: 20px 0;
-            font-size: 1.1em;
-            opacity: 0.9;
-        }
+  @keyframes breathe {
+    0%, 100% { opacity: .55; }
+    50% { opacity: 1; }
+  }
 
-        .stats {
-            display: flex;
-            justify-content: space-around;
-            margin: 20px 0;
-            font-size: 0.9em;
-        }
+  .model {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: .1em;
+  }
 
-        .stat-item {
-            text-align: center;
-        }
+  /* LED 스크린 */
+  .screen {
+    position: relative;
+    background: var(--screen);
+    border-radius: 10px;
+    padding: 20px 18px 16px;
+    margin: 0 6px 22px;
+    box-shadow:
+      inset 0 2px 6px rgba(0,0,0,.8),
+      inset 0 0 0 1px #000;
+    overflow: hidden;
+    text-align: right;
+  }
 
-        .stat-value {
-            font-size: 1.5em;
-            font-weight: bold;
-            display: block;
-        }
+  .screen::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(255,255,255,.025) 0px,
+      rgba(255,255,255,.025) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    pointer-events: none;
+  }
 
-        .reset-button {
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 12px 24px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 1em;
-            margin-top: 20px;
-            transition: all 0.3s ease;
-        }
+  .bpm-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: flex-end;
+    gap: 10px;
+    line-height: 1;
+  }
 
-        .reset-button:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
-        }
+  .bpm-display {
+    font-family: 'Major Mono Display', monospace;
+    font-size: 3.4em;
+    font-variant-numeric: tabular-nums;
+    color: var(--amber);
+    text-shadow: 0 0 10px var(--amber-glow), 0 0 26px var(--amber-glow);
+    transition: text-shadow .15s ease;
+  }
 
-        .instructions {
-            margin-top: 20px;
-            font-size: 0.9em;
-            opacity: 0.7;
-            line-height: 1.5;
-        }
+  .bpm-unit {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    color: var(--amber-dim);
+  }
 
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
+  .screen-sub {
+    margin-top: 6px;
+    font-size: 11px;
+    letter-spacing: .12em;
+    color: #5a4520;
+    text-align: right;
+  }
 
-        .pulse {
-            animation: pulse 0.2s ease-in-out;
-        }
-    </style>
+  /* TAP 링 + 버튼 */
+  .tap-zone {
+    position: relative;
+    width: 190px;
+    height: 190px;
+    margin: 4px auto 20px;
+  }
+
+  .led-ring {
+    position: absolute;
+    inset: 0;
+  }
+
+  .led-ring .dot {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 5px;
+    height: 5px;
+    margin: -2.5px;
+    border-radius: 50%;
+    background: #3a3b40;
+    box-shadow: inset 0 1px 1px rgba(0,0,0,.5);
+    transition: background .12s ease, box-shadow .12s ease;
+  }
+
+  .led-ring .dot.lit {
+    background: var(--amber);
+    box-shadow: 0 0 6px 1px var(--amber-glow);
+  }
+
+  .led-ring.flash .dot.lit {
+    background: #fff4d9;
+    box-shadow: 0 0 12px 3px var(--amber-glow);
+  }
+
+  .tap-button {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 138px;
+    height: 138px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    outline: none;
+    background:
+      linear-gradient(165deg, #b1443c 0%, #93342d 45%, #732922 100%);
+    box-shadow:
+      0 8px 18px rgba(0,0,0,.4),
+      inset 0 1px 1px rgba(255,255,255,.12),
+      inset 0 -10px 16px rgba(0,0,0,.3);
+    color: rgba(255,255,255,.92);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 1.5em;
+    letter-spacing: .1em;
+    transition: transform .08s ease, box-shadow .08s ease, background .08s ease;
+  }
+
+  .tap-button:hover {
+    background:
+      linear-gradient(165deg, #bd4a41 0%, #99372f 45%, #782a23 100%);
+    box-shadow:
+      0 10px 20px rgba(0,0,0,.45),
+      inset 0 1px 1px rgba(255,255,255,.14),
+      inset 0 -10px 16px rgba(0,0,0,.3);
+  }
+
+  .tap-button:active,
+  .tap-button.active {
+    transform: translate(-50%, -50%) scale(.96);
+    background:
+      linear-gradient(165deg, #8f342d 0%, #772b25 45%, #5f221d 100%);
+    box-shadow:
+      0 3px 8px rgba(0,0,0,.4),
+      inset 0 3px 7px rgba(0,0,0,.4);
+  }
+
+  /* 하단 계기판 */
+  .dash {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 6px 0;
+  }
+
+  .readout-block {
+    text-align: left;
+  }
+
+  .readout-label {
+    font-size: 10px;
+    letter-spacing: .14em;
+    color: var(--muted);
+    margin-bottom: 3px;
+  }
+
+  .readout-value {
+    font-family: 'Major Mono Display', monospace;
+    font-size: 1.05em;
+    color: var(--text);
+  }
+
+  .steady-leds {
+    display: flex;
+    gap: 4px;
+    margin-top: 5px;
+  }
+
+  .steady-leds span {
+    width: 14px;
+    height: 4px;
+    border-radius: 2px;
+    background: #3a3b40;
+    transition: background .15s ease, box-shadow .15s ease;
+  }
+
+  .steady-leds span.on {
+    background: var(--amber);
+    box-shadow: 0 0 5px var(--amber-glow);
+  }
+
+  .reset-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,.03);
+    border: 1px solid var(--panel-border);
+    color: var(--muted);
+    padding: 9px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    transition: all .15s ease;
+  }
+
+  .reset-button:hover {
+    color: var(--text);
+    border-color: var(--amber-dim);
+    background: rgba(255,176,32,.06);
+  }
+
+  .reset-button svg { width: 13px; height: 13px; }
+
+  .instructions {
+    margin-top: 20px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--panel-border);
+    font-size: 11.5px;
+    line-height: 1.6;
+    letter-spacing: .02em;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  /* 접근성: 모션 최소화 */
+  @media (prefers-reduced-motion: reduce) {
+    .power-led { animation: none; }
+    .bpm-display, .tap-button, .led-ring .dot { transition: none; }
+  }
+
+  button:focus-visible {
+    outline: 2px solid var(--amber);
+    outline-offset: 3px;
+  }
+</style>
 </head>
 <body>
-    <div class="container">
-        <h1>BPM 측정기</h1>
-        <p class="subtitle">음악에 맞춰 버튼을 누르거나 키보드를 쳐보세요</p>
-        
-        <div class="bpm-display" id="bpmDisplay">--</div>
-        
-        <button class="tap-button" id="tapBtn">TAP</button>
-        
-        <div class="stats">
-            <div class="stat-item">
-                <span class="stat-value" id="tapCount">0</span>
-                <span>탭 횟수</span>
-            </div>
-        </div>
 
-        <button class="reset-button" id="resetBtn">리셋</button>
-        
-        <p class="instructions">
-            아무 키보드 키나 마우스 클릭으로 간격을 측정합니다.<br>
-            새로 시작하려면 '리셋' 버튼을 누르세요.
-        </p>
+<div class="unit">
+  <span class="screw tl"></span><span class="screw tr"></span>
+  <span class="screw bl"></span><span class="screw br"></span>
+
+  <div class="topbar">
+    <div class="brand"><span class="power-led"></span>TAP TEMPO UNIT</div>
+    <div class="model">MK.1</div>
+  </div>
+
+  <div class="screen">
+    <div class="bpm-row">
+      <span class="bpm-display" id="bpmDisplay">--</span>
+      <span class="bpm-unit">BPM</span>
+    </div>
+    <div class="screen-sub" id="screenSub">TAP TO START</div>
+  </div>
+
+  <div class="tap-zone">
+    <div class="led-ring" id="ledRing"></div>
+    <button class="tap-button" id="tapBtn">TAP</button>
+  </div>
+
+  <div class="dash">
+    <div class="readout-block">
+      <div class="readout-label">TAPS</div>
+      <div class="readout-value" id="tapCount">0</div>
+      <div class="steady-leds" id="steadyLeds">
+        <span></span><span></span><span></span>
+      </div>
     </div>
 
-    <script>
-        const bpmDisplay = document.getElementById('bpmDisplay');
-        const tapBtn = document.getElementById('tapBtn');
-        const tapCountDisplay = document.getElementById('tapCount');
-        const resetBtn = document.getElementById('resetBtn');
+    <button class="reset-button" id="resetBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      RESET
+    </button>
+  </div>
 
-        let timestamps = [];
+  <p class="instructions">
+    버튼 클릭 또는 아무 키보드 키로 박자를 두드리세요.<br>
+    링 LED는 탭할 때마다 채워지고, BPM이 잡히면 그 템포로 깜빡입니다.
+  </p>
+</div>
 
-        // 탭 입력 시 작동하는 핵심 함수
-        function handleTap() {
-            const now = Date.now();
-            timestamps.push(now);
+<script>
+  const bpmDisplay   = document.getElementById('bpmDisplay');
+  const screenSub    = document.getElementById('screenSub');
+  const tapBtn       = document.getElementById('tapBtn');
+  const tapCountDisplay = document.getElementById('tapCount');
+  const resetBtn     = document.getElementById('resetBtn');
+  const ledRing       = document.getElementById('ledRing');
+  const steadyLeds    = document.getElementById('steadyLeds').children;
 
-            // 최근 30개의 입력만 유지 (오래된 데이터는 성능 및 정확도를 위해 삭제)
-            if (timestamps.length > 30) {
-                timestamps.shift();
-            }
+  let timestamps = [];
+  let flashTimer = null;
 
-            // 시각적 피드백 효과 (숫자 커졌다 작아지기)
-            bpmDisplay.classList.remove('pulse');
-            void bpmDisplay.offsetWidth; // 리플로우 강제 발생으로 애니메이션 초기화
-            bpmDisplay.classList.add('pulse');
+  // ---- LED 링 생성 (탭 진행률을 표시하는 원형 게이지) ----
+  const DOT_COUNT = 24;
+  const dots = [];
+  for (let i = 0; i < DOT_COUNT; i++) {
+    const angle = (i / DOT_COUNT) * 2 * Math.PI - Math.PI / 2;
+    const radius = 92;
+    const x = 95 + radius * Math.cos(angle);
+    const y = 95 + radius * Math.sin(angle);
+    const dot = document.createElement('div');
+    dot.className = 'dot';
+    dot.style.left = x + 'px';
+    dot.style.top = y + 'px';
+    ledRing.appendChild(dot);
+    dots.push(dot);
+  }
 
-            // BPM 계산 (최소 2번 이상 눌려야 계산 가능)
-            if (timestamps.length > 1) {
-                let intervals = [];
-                for (let i = 1; i < timestamps.length; i++) {
-                    intervals.push(timestamps[i] - timestamps[i - 1]);
-                }
-                
-                // 간격들의 평균 구하기 (밀리초 단위)
-                const averageInterval = intervals.reduce((sum, val) => sum + val, 0) / intervals.length;
-                
-                // 1분(60,000ms)을 평균 간격으로 나누어 BPM 산출
-                const bpm = Math.round(60000 / averageInterval);
-                bpmDisplay.textContent = bpm;
-            }
+  function updateRing(count) {
+    const lit = count % DOT_COUNT === 0 && count > 0 ? DOT_COUNT : count % DOT_COUNT;
+    dots.forEach((d, i) => d.classList.toggle('lit', i < lit));
+  }
 
-            tapCountDisplay.textContent = timestamps.length;
-        }
+  function ringFlashOnce() {
+    ledRing.classList.add('flash');
+    setTimeout(() => ledRing.classList.remove('flash'), 90);
+  }
 
-        // 리셋 함수
-        function resetCalculator() {
-            timestamps = [];
-            bpmDisplay.textContent = '--';
-            tapCountDisplay.textContent = '0';
-        }
+  function startTempoFlasher(bpm) {
+    if (flashTimer) clearInterval(flashTimer);
+    const intervalMs = 60000 / bpm;
+    flashTimer = setInterval(ringFlashOnce, intervalMs);
+  }
 
-        // 1. 마우스 클릭 / 터치 이벤트
-        tapBtn.addEventListener('click', handleTap);
+  function stopTempoFlasher() {
+    if (flashTimer) clearInterval(flashTimer);
+    flashTimer = null;
+  }
 
-        // 2. 키보드 다운 이벤트 (아무 키나 눌렀을 때)
-        window.addEventListener('keydown', (e) => {
-            // 포커스가 리셋 버튼에 가있을 때 엔터/스페이스를 누르면 중복 작동하는 현상 방지
-            if (e.target.tagName === 'BUTTON' && (e.key === ' ' || e.key === 'Enter')) {
-                e.preventDefault();
-            }
-            
-            // 키를 꾹 누르고 있을 때 연속으로 찍히는 것 방지
-            if (e.repeat) return; 
+  // ---- 안정도(STEADY) 표시: 최근 간격들의 변동폭 기준 ----
+  function updateSteadiness(intervals) {
+    const recent = intervals.slice(-8);
+    if (recent.length < 2) {
+      [...steadyLeds].forEach(l => l.classList.remove('on'));
+      return;
+    }
+    const mean = recent.reduce((a, b) => a + b, 0) / recent.length;
+    const variance = recent.reduce((a, b) => a + (b - mean) ** 2, 0) / recent.length;
+    const cv = Math.sqrt(variance) / mean; // 변동계수
 
-            tapBtn.classList.add('active'); // 버튼이 눌린 스타일 적용
-            handleTap();
-        });
+    let level = 1;
+    if (cv < 0.03) level = 3;
+    else if (cv < 0.08) level = 2;
 
-        // 3. 키보드 업 이벤트 (키에서 손을 뗐을 때 버튼 모양 복구)
-        window.addEventListener('keyup', () => {
-            tapBtn.classList.remove('active');
-        });
+    [...steadyLeds].forEach((l, i) => l.classList.toggle('on', i < level));
+  }
 
-        // 리셋 버튼 이벤트
-        resetBtn.addEventListener('click', (e) => {
-            resetCalculator();
-            e.blur(); // 리셋 후 포커스를 해제하여 키보드 오작동 방지
-        });
-    </script>
+  // ---- 탭 입력 처리 (기존 계산 로직 유지) ----
+  function handleTap() {
+    const now = Date.now();
+    timestamps.push(now);
+
+    if (timestamps.length > 30) {
+      timestamps.shift();
+    }
+
+    bpmDisplay.style.textShadow = '0 0 22px var(--amber-glow), 0 0 40px var(--amber-glow)';
+    setTimeout(() => { bpmDisplay.style.textShadow = ''; }, 140);
+
+    let intervals = [];
+    if (timestamps.length > 1) {
+      for (let i = 1; i < timestamps.length; i++) {
+        intervals.push(timestamps[i] - timestamps[i - 1]);
+      }
+
+      const averageInterval = intervals.reduce((sum, val) => sum + val, 0) / intervals.length;
+      const bpm = Math.round(60000 / averageInterval);
+      bpmDisplay.textContent = bpm;
+      screenSub.textContent = 'LOCKED';
+      startTempoFlasher(bpm);
+      updateSteadiness(intervals);
+    }
+
+    tapCountDisplay.textContent = timestamps.length;
+    updateRing(timestamps.length);
+  }
+
+  function resetCalculator() {
+    timestamps = [];
+    bpmDisplay.textContent = '--';
+    screenSub.textContent = 'TAP TO START';
+    tapCountDisplay.textContent = '0';
+    stopTempoFlasher();
+    updateRing(0);
+    [...steadyLeds].forEach(l => l.classList.remove('on'));
+  }
+
+  tapBtn.addEventListener('click', handleTap);
+
+  window.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'BUTTON' && (e.key === ' ' || e.key === 'Enter')) {
+      e.preventDefault();
+    }
+    if (e.repeat) return;
+
+    tapBtn.classList.add('active');
+    handleTap();
+  });
+
+  window.addEventListener('keyup', () => {
+    tapBtn.classList.remove('active');
+  });
+
+  resetBtn.addEventListener('click', (e) => {
+    resetCalculator();
+    e.currentTarget.blur();
+  });
+</script>
 </body>
 </html>
